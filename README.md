@@ -1,81 +1,95 @@
 # REST-to-SMTP
 
-A simple Go application that provides a REST API for sending emails via SMTP.
+A modern REST API for sending emails via SMTP, built with Node.js, TypeScript, Fastify, and Nodemailer.
 
 ## Features
 
-- REST API endpoint for sending emails
-- SMTP configuration via API request
-- JSON request/response format
-- CORS support
-- Health check endpoint
-- Input validation
-- Docker containerization
-- GitHub Actions CI/CD pipeline
-- Multi-stage Docker build for optimal image size
+- 🚀 **Fast & Modern**: Built with Fastify (faster than Express)
+- 📧 **SMTP Support**: Works with any SMTP server (Gmail, Outlook, custom servers)
+- 🔒 **Type Safety**: Full TypeScript support with strict typing
+- ✅ **Validation**: Zod schema validation for all inputs
+- 🏗️ **Layered Architecture**: Clean separation of concerns
+- 🐳 **Docker Ready**: Multi-stage Docker build with security best practices
+- 🔄 **CI/CD**: GitHub Actions pipeline for automated testing and deployment
+- 📊 **Structured Logging**: Detailed logging for monitoring and debugging
+- 🛡️ **Security**: Non-root user, health checks, and input validation
 
-## Project Structure
+## Architecture
 
 ```
-rest-to-smtp/
-├── cmd/
-│   └── server/
-│       └── main.go          # Application entry point
-├── internal/
-│   ├── handlers/            # HTTP handlers
-│   │   ├── email.go
-│   │   └── health.go
-│   ├── models/              # Data structures
-│   │   └── email.go
-│   └── services/            # Business logic
-│       └── email.go
-├── Dockerfile               # Multi-stage Docker build
-├── .github/workflows/      # GitHub Actions CI/CD pipeline
-├── go.mod                  # Go module definition
-└── README.md
+src/
+├── controllers/     # HTTP request handlers
+├── services/        # Business logic layer
+├── validators/      # Zod validation schemas
+├── types/          # TypeScript type definitions
+├── utils/          # Utility functions
+└── server.ts       # Application entry point
 ```
 
-## Installation
+## Quick Start
 
-### Option 1: Using Docker (Recommended)
+### Prerequisites
 
-1. Pull the Docker image from Docker Hub:
-```bash
-docker pull your-github-username/rest-to-smtp:latest
-```
+- Node.js 18+
+- npm or yarn
+- Docker (optional)
 
-2. Run the container:
-```bash
-docker run -p 8080:8080 your-github-username/rest-to-smtp:latest
-```
+### Local Development
 
-> **Note:** The image name follows the pattern `{github-username}/{repository-name}` and is automatically built and pushed by GitHub Actions.
+1. **Clone and install dependencies:**
+   ```bash
+   git clone <repository-url>
+   cd rest-to-smtp
+   npm install
+   ```
 
-### Option 2: Building from Source
+2. **Build the application:**
+   ```bash
+   npm run build
+   ```
 
-1. Make sure you have Go installed (version 1.21 or higher)
-2. Clone or download this repository
-3. Navigate to the project directory
-4. Run the application:
+3. **Start the server:**
+   ```bash
+   npm start
+   # or for development with hot reload:
+   npm run dev
+   ```
 
-```bash
-go run ./cmd/server
-```
+4. **Test the API:**
+   ```bash
+   # Health check
+   curl http://localhost:8080/health
 
-The server will start on port 8080.
+   # Send email
+   curl -X POST http://localhost:8080/send-email \
+     -H "Content-Type: application/json" \
+     -d '{
+       "smtp_host": "smtp.gmail.com",
+       "smtp_port": 587,
+       "username": "your-email@gmail.com",
+       "password": "your-app-password",
+       "to": "recipient@example.com",
+       "subject": "Test Email",
+       "body": "Hello from REST-to-SMTP!"
+     }'
+   ```
 
-### Option 3: Building Docker Image Locally
+### Docker
 
-1. Clone the repository
-2. Build the Docker image:
-```bash
-docker build -t rest-to-smtp .
-```
+1. **Build the image:**
+   ```bash
+   docker build -t rest-to-smtp .
+   ```
 
-3. Run the container:
-```bash
-docker run -p 8080:8080 rest-to-smtp
-```
+2. **Run the container:**
+   ```bash
+   docker run -d -p 8080:8080 --name rest-to-smtp rest-to-smtp
+   ```
+
+3. **Test the container:**
+   ```bash
+   curl http://localhost:8080/health
+   ```
 
 ## API Endpoints
 
@@ -87,12 +101,12 @@ Send an email via SMTP.
 ```json
 {
   "smtp_host": "smtp.gmail.com",
-  "smtp_port": "587",
+  "smtp_port": 587,
   "username": "your-email@gmail.com",
   "password": "your-password",
   "to": "recipient@example.com",
-  "subject": "Test Email",
-  "body": "This is a test email body"
+  "subject": "Email Subject",
+  "body": "Email content"
 }
 ```
 
@@ -100,7 +114,9 @@ Send an email via SMTP.
 ```json
 {
   "success": true,
-  "message": "Email sent successfully"
+  "message": "Email sent successfully",
+  "messageId": "<message-id>",
+  "duration": 1234
 }
 ```
 
@@ -112,188 +128,157 @@ Health check endpoint.
 ```json
 {
   "status": "healthy",
-  "service": "rest-to-smtp"
+  "timestamp": "2025-09-07T14:10:09.064Z",
+  "version": "1.0.0"
 }
 ```
 
-## Usage Examples
+## SMTP Configuration
 
-### Using curl
+### Supported Ports
+- **25**: Plain SMTP (no encryption)
+- **587**: SMTP with STARTTLS (recommended)
+- **465**: SMTPS (implicit SSL)
+
+### Popular SMTP Providers
+
+#### Gmail
+```json
+{
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587,
+  "username": "your-email@gmail.com",
+  "password": "your-app-password"
+}
+```
+
+#### Outlook/Hotmail
+```json
+{
+  "smtp_host": "smtp-mail.outlook.com",
+  "smtp_port": 587,
+  "username": "your-email@outlook.com",
+  "password": "your-password"
+}
+```
+
+#### Custom SMTP Server
+```json
+{
+  "smtp_host": "mail.yourdomain.com",
+  "smtp_port": 587,
+  "username": "your-email@yourdomain.com",
+  "password": "your-password"
+}
+```
+
+## Validation
+
+The API validates all inputs using Zod schemas:
+
+- **SMTP Host**: Must be a valid domain name
+- **Port**: Must be 25, 587, or 465
+- **Username**: Must be a valid email address
+- **Password**: Required (minimum 1 character)
+- **To**: Must be a valid email address
+- **Subject**: Required, max 200 characters
+- **Body**: Required, max 10,000 characters
+
+## CI/CD Pipeline
+
+The project includes GitHub Actions workflows:
+
+### Test Workflow (`.github/workflows/test.yml`)
+- Runs on every push and pull request
+- Tests with Node.js 18 and 20
+- TypeScript compilation check
+- Security audit
+- Linting (if configured)
+
+### CI/CD Workflow (`.github/workflows/ci-cd.yml`)
+- Runs on push to main branch
+- Builds and pushes Docker image to GitHub Container Registry
+- Multi-platform build (linux/amd64, linux/arm64)
+- Automated deployment notifications
+
+## Docker Image
+
+The Docker image is automatically built and pushed to GitHub Container Registry:
 
 ```bash
-curl -X POST http://localhost:8080/send-email \
-  -H "Content-Type: application/json" \
-  -d '{
-    "smtp_host": "smtp.gmail.com",
-    "smtp_port": "587",
-    "username": "your-email@gmail.com",
-    "password": "your-app-password",
-    "to": "recipient@example.com",
-    "subject": "Test Email",
-    "body": "Hello from REST-to-SMTP!"
-  }'
+# Pull the latest image
+docker pull ghcr.io/your-username/rest-to-smtp:latest
+
+# Run the container
+docker run -d -p 8080:8080 ghcr.io/your-username/rest-to-smtp:latest
 ```
 
-### Using JavaScript (fetch)
+## Environment Variables
 
-```javascript
-const response = await fetch('http://localhost:8080/send-email', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    smtp_host: 'smtp.gmail.com',
-    smtp_port: '587',
-    username: 'your-email@gmail.com',
-    password: 'your-app-password',
-    to: 'recipient@example.com',
-    subject: 'Test Email',
-    body: 'Hello from REST-to-SMTP!'
-  })
-});
+- `PORT`: Server port (default: 8080)
 
-const result = await response.json();
-console.log(result);
-```
+## Security Features
 
-## SMTP Configuration Examples
-
-### Gmail
-- Host: `smtp.gmail.com`
-- Port: `587` (TLS) or `465` (SSL)
-- Username: Your Gmail address
-- Password: App password (not your regular password)
-
-### Outlook/Hotmail
-- Host: `smtp-mail.outlook.com`
-- Port: `587`
-- Username: Your Outlook email
-- Password: Your Outlook password
-
-### Custom SMTP Server
-- Host: Your SMTP server address
-- Port: Usually `587` or `465`
-- Username: Your SMTP username
-- Password: Your SMTP password
+- Non-root user in Docker container
+- Input validation and sanitization
+- Structured logging for monitoring
+- Health checks for container orchestration
+- CORS support for web applications
 
 ## Error Handling
 
-The API returns appropriate HTTP status codes and error messages:
+The API provides detailed error messages:
 
-- `400 Bad Request`: Invalid JSON, missing required fields, or SMTP connection failed
-- `405 Method Not Allowed`: Wrong HTTP method
-- `500 Internal Server Error`: SMTP sending failed
-
-### Timeout Protection
-
-The application includes built-in timeout protection:
-
-- **SMTP Connection Test**: 10 seconds timeout for initial connection test
-- **Email Sending**: 30 seconds timeout for complete email sending process
-- **Fast Failure**: Invalid SMTP servers are detected quickly without hanging
-
-### Common Error Messages
-
-- `"SMTP connection failed: cannot connect to SMTP server"` - Server unreachable
-- `"SMTP connection timeout after 30 seconds"` - Operation took too long
-- `"Username and Password not accepted"` - Authentication failed
-- `"invalid SMTP port. Use 25, 587, or 465"` - Invalid port number
-
-## Security Notes
-
-- This application is designed for development and testing purposes
-- In production, consider implementing authentication and rate limiting
-- Never hardcode SMTP credentials in your client applications
-- Use environment variables or secure configuration management for sensitive data
-
-## GitHub Actions CI/CD
-
-This project includes a GitHub Actions CI/CD pipeline that automatically:
-
-1. **Tests** - Runs Go tests and linting on pull requests and pushes
-2. **Builds** - Creates Docker images for different branches
-3. **Deploys** - Pushes images to Docker Hub
-
-### Setup for GitHub Actions
-
-1. **Create Docker Hub Access Token:**
-   - Go to [hub.docker.com](https://hub.docker.com) and sign in
-   - Click your username → **Account Settings**
-   - Go to **Security** → **New Access Token**
-   - Name: "github-actions", Permissions: **Read, Write, Delete**
-   - Click **Generate** and **copy the token** (shown only once!)
-
-2. **Set up Docker Hub credentials in GitHub:**
-   - Go to your GitHub repository → **Settings** → **Secrets and variables** → **Actions**
-   - Click **New repository secret** and add:
-     - `DOCKER_USERNAME`: Your Docker Hub username
-     - `DOCKER_PASSWORD`: Your Docker Hub access token (NOT your password!)
-
-3. **Workflow triggers:**
-   - `push`: Runs on main and develop branches
-   - `pull_request`: Runs on PRs targeting main or develop branches
-
-4. **Pipeline stages:**
-   - `test`: Runs Go tests, linting, and dependency verification
-   - `build-and-push`: Builds and pushes Docker images (only on push events)
-   - `deploy`: Deploys to production (only on main branch)
-
-5. **Image tags:**
-   - `latest`: For main branch
-   - `develop`: For develop branch
-   - `{branch}-{commit-sha}`: For other branches
-
-### Manual Deployment
-
-To manually deploy to Docker Hub:
-
-```bash
-# Build and tag the image
-docker build -t your-github-username/rest-to-smtp:latest .
-
-# Push to Docker Hub
-docker push your-github-username/rest-to-smtp:latest
+```json
+{
+  "success": false,
+  "message": "Validation failed: smtp_port: Unsupported SMTP port. Supported ports: 25, 587, 465"
+}
 ```
 
-### Workflow Features
+Common error scenarios:
+- Invalid SMTP configuration
+- Network connectivity issues
+- Authentication failures
+- Validation errors
 
-- **Multi-platform builds**: Supports both AMD64 and ARM64 architectures
-- **Caching**: Uses GitHub Actions cache for faster builds
-- **Security**: Uses Docker Buildx for secure builds
-- **Automatic tagging**: Creates appropriate tags based on branch and commit
-- **Environment protection**: Production deployment requires manual approval
+## Development
 
-## Building for Production
-
-### Using Go
-
-To build a binary for production:
-
-```bash
-go build -o rest-to-smtp ./cmd/server
+### Project Structure
+```
+rest-to-smtp/
+├── src/
+│   ├── controllers/     # HTTP handlers
+│   ├── services/        # Business logic
+│   ├── validators/      # Zod schemas
+│   ├── types/          # TypeScript types
+│   ├── utils/          # Utilities
+│   └── server.ts       # Entry point
+├── dist/               # Compiled JavaScript
+├── .github/workflows/  # CI/CD pipelines
+├── Dockerfile         # Docker configuration
+├── package.json       # Dependencies
+└── tsconfig.json      # TypeScript config
 ```
 
-Then run the binary:
+### Scripts
+- `npm run build`: Compile TypeScript
+- `npm start`: Start production server
+- `npm run dev`: Start development server with hot reload
+- `npm test`: Run tests (if available)
 
-```bash
-./rest-to-smtp
-```
+## License
 
-### Using Docker
+MIT License - see LICENSE file for details.
 
-The Dockerfile uses multi-stage build for optimal image size:
+## Contributing
 
-```bash
-# Build the image
-docker build -t rest-to-smtp .
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-# Run the container
-docker run -p 8080:8080 rest-to-smtp
-```
+## Support
 
-The final image is based on Alpine Linux and includes:
-- Non-root user for security
-- Health check endpoint
-- Minimal attack surface
-- Small image size (~15MB)
+For issues and questions, please open an issue on GitHub.

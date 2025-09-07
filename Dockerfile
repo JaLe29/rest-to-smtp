@@ -1,49 +1,51 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Multi-stage build for Node.js TypeScript application
+FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod ./
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
 
-# Download dependencies
-RUN go mod download
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy source code
-COPY . .
+COPY src/ ./src/
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
+RUN npm run build
 
-# Final stage
-FROM alpine:latest
+# Production stage
+FROM node:18-alpine AS production
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
-
-# Create non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# Create app user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
 
 # Set working directory
-WORKDIR /root/
+WORKDIR /app
 
-# Copy the binary from builder stage
-COPY --from=builder /app/main .
+# Copy package files
+COPY package*.json ./
 
-# Change ownership to non-root user
-RUN chown appuser:appgroup main
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
 
-# Switch to non-root user
-USER appuser
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Change ownership to nodejs user
+RUN chown -R nodejs:nodejs /app
+USER nodejs
 
 # Expose port
 EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD node -e "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Run the application
-CMD ["./main"]
+# Start the application
+CMD ["node", "dist/server.js"]
