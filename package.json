@@ -6,8 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "tsx watch src/server.ts",
-    "test": "jest"
+    "dev": "tsx watch src/server.ts"
   },
   "keywords": ["smtp", "email", "rest-api", "fastify", "typescript"],
   "author": "",
