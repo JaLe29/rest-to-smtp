@@ -41,7 +41,7 @@ export class EmailService {
         from: config.username,
         to: config.to,
         subject: config.subject,
-        text: config.body,
+        html: config.body,
         headers: {
           'X-Mailer': 'rest-to-smtp/1.0',
           'X-Priority': '3'
