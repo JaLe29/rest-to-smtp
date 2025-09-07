@@ -78,23 +78,6 @@ func (h *EmailHandler) SendEmail(c *gin.Context) {
 		return
 	}
 
-	// Test SMTP connection first
-	if err := h.emailService.TestSMTPConnection(emailReq); err != nil {
-		slog.Error("SMTP connection test failed in handler",
-			"client_ip", clientIP,
-			"to", emailReq.To,
-			"subject", emailReq.Subject,
-			"smtp_host", emailReq.SMTPHost,
-			"error", err.Error(),
-			"timestamp", time.Now().Format(time.RFC3339),
-		)
-		c.JSON(http.StatusBadRequest, models.EmailResponse{
-			Success: false,
-			Message: fmt.Sprintf("SMTP connection failed: %v", err),
-		})
-		return
-	}
-
 	// Send email
 	if err := h.emailService.SendEmail(emailReq); err != nil {
 		duration := time.Since(startTime)
